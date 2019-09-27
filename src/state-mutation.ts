@@ -1,7 +1,9 @@
 import imm from 'object-path-immutable';
+import { readEndpoint } from './actions';
 import pluralize from 'pluralize';
 import { hasOwnProperties } from './utils';
 import equal from 'deep-equal';
+import normalize from 'json-api-normalizer';
 
 export const makeUpdateReverseRelationship = (
   resource,
@@ -183,7 +185,7 @@ export const removeResourceFromState = (state, resource) => {
     const entityPath = [resource.relationships[key].data.type, 'data'];
 
     if (hasOwnProperties(state, entityPath)) {
-      const updateReverseRelationship = makeUpdateReverseRelationship(
+      const updateReverseRelationship = readEndpoint(
         resource,
         resource.relationships[key],
         null
@@ -192,7 +194,8 @@ export const removeResourceFromState = (state, resource) => {
       return newState.set(
         entityPath,
         updateReverseRelationship(
-          state[resource.relationships[key].data.type].data
+          state[resource.relationships[key].data.type].data,
+          null
         )
       );
     }
@@ -220,3 +223,12 @@ export const ensureResourceTypeInState = (state, type) => {
     ? state
     : imm(state).set(path, []).value();
 };
+
+export const addNormalizationToState = (state) => {
+  Object.keys(state).forEach(key => {
+    if (hasOwnProperties(state[key], ['data'])) {
+      state[key] = normalize(state[key]);
+    }
+  });
+  return state;
+}
